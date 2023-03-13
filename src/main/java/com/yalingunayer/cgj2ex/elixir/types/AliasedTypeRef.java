@@ -1,4 +1,4 @@
-package com.yalingunayer.sandbox.elixir.types;
+package com.yalingunayer.cgj2ex.elixir.types;
 
 public class AliasedTypeRef extends TypeRef {
     public AliasedTypeRef(String packageName, String typeName) {

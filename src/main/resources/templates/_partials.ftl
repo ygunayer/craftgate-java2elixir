@@ -1,7 +1,7 @@
-<#assign Utils=statics['com.yalingunayer.sandbox.Utils']>
+<#assign Utils=statics['com.yalingunayer.cgj2ex.Utils']>
 
 <#macro show_enum enum indent=1>
-<#local spc>${""?left_pad(indent * 4)}</#local>
+<#local spc>${""?left_pad(indent * 2)}</#local>
 ${spc}defmodule ${enum.name} do
   <#list enum.values as value>
   ${spc}def ${Utils.toSnakeCase(value)}(), do: :${value}
@@ -12,7 +12,7 @@ ${spc}end
 </#macro>
 
 <#macro show_class class indent=1>
-<#local spc>${""?left_pad(indent * 4)}</#local>
+<#local spc>${""?left_pad(indent * 2)}</#local>
 ${spc}defmodule ${class.name} do
   ${spc}use Jason.Structs.Struct
 

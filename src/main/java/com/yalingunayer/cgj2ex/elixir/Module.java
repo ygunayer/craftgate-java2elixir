@@ -1,9 +1,6 @@
-package com.yalingunayer.sandbox.elixir;
+package com.yalingunayer.cgj2ex.elixir;
 
-import com.yalingunayer.sandbox.Utils;
-
-import java.util.Collections;
-import java.util.stream.Collectors;
+import com.yalingunayer.cgj2ex.Utils;
 
 public interface Module {
     String getPackageName();

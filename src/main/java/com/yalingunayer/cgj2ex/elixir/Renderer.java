@@ -1,6 +1,6 @@
-package com.yalingunayer.sandbox.elixir;
+package com.yalingunayer.cgj2ex.elixir;
 
-import com.yalingunayer.sandbox.Elixirify;
+import com.yalingunayer.cgj2ex.Elixirify;
 import freemarker.ext.beans.BeansWrapper;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateExceptionHandler;

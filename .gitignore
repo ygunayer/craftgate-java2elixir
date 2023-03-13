@@ -3,3 +3,4 @@ build/
 .idea/
 !output/.gitkeep
 output/
+.DS_Store

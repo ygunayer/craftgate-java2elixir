@@ -1,6 +1,6 @@
-package com.yalingunayer.sandbox.elixir.types;
+package com.yalingunayer.cgj2ex.elixir.types;
 
-import com.yalingunayer.sandbox.Utils;
+import com.yalingunayer.cgj2ex.Utils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

@@ -1,15 +1,14 @@
-package com.yalingunayer.sandbox;
+package com.yalingunayer.cgj2ex;
 
-import com.yalingunayer.sandbox.elixir.Module;
-import com.yalingunayer.sandbox.elixir.*;
-import com.yalingunayer.sandbox.elixir.types.BasicType;
-import com.yalingunayer.sandbox.elixir.types.ListType;
-import com.yalingunayer.sandbox.elixir.types.Type;
-import com.yalingunayer.sandbox.elixir.types.TypeRef;
+import com.yalingunayer.cgj2ex.elixir.Module;
+import com.yalingunayer.cgj2ex.elixir.*;
+import com.yalingunayer.cgj2ex.elixir.types.BasicType;
+import com.yalingunayer.cgj2ex.elixir.types.ListType;
+import com.yalingunayer.cgj2ex.elixir.types.Type;
+import com.yalingunayer.cgj2ex.elixir.types.TypeRef;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
@@ -27,44 +26,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Elixirify {
-    public static void main(String[] args) throws Exception {
-        final Path rootPath;
-        if (args.length > 0) {
-            rootPath = new File(args[0]).toPath().toAbsolutePath();
-        } else {
-            rootPath = Paths.get(System.getProperty("user.dir"), "output").toAbsolutePath();
-        }
+    public static List<Module> getAllModules() {
+        var models = Stream.of("io.craftgate.request", "io.craftgate.response")
+                .map(packageName -> new Reflections(packageName, new SubTypesScanner(false)))
+                .flatMap(reflections -> reflections.getSubTypesOf(Object.class).stream())
+                .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()) && !Modifier.isStatic(clazz.getModifiers()))
+                .map(Elixirify::parseClass);
 
-        System.out.printf("Using root path %s%n", rootPath);
-
-        var enums = getEnums();
-        var models = getModels();
-
-        var ignoredPackages = List.of(
-                "io.craftgate.net",
-                "io.craftgate.request.common"
-        );
-
-        var allObjects = Stream
-                .concat(enums.stream(), models.stream())
-                .filter(module -> !ignoredPackages.contains(module.getPackageName()))
-                .collect(Collectors.groupingBy(Module::getPackageName));
-
-        var renderer = Renderer.createDefault();
-
-        allObjects
-                .keySet()
+        var enums = new Reflections("io.craftgate")
+                .getSubTypesOf(Enum.class)
                 .stream()
-                .map(name -> new Namespace(Utils.packageNameToNamespace(name), allObjects.get(name)))
-                .forEach(namespace -> {
-                    try {
-                        writeNamespace(renderer, rootPath, namespace);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                .map(Elixirify::parseEnum);
 
-        System.out.println("Successfully finished writing modules");
+        return Stream.concat(models, enums).toList();
     }
 
     public static void writeNamespace(Renderer renderer, Path rootDir, Namespace namespace) throws Exception {
@@ -88,23 +62,6 @@ public class Elixirify {
         }
 
         System.out.printf("Namespace %s was written to %s%n", namespace.getName(), targetPath);
-    }
-
-    public static List<Module> getEnums() {
-        return new Reflections("io.craftgate")
-                .getSubTypesOf(Enum.class)
-                .stream()
-                .map(Elixirify::parseEnum)
-                .toList();
-    }
-
-    public static List<Module> getModels() {
-        return Stream.of("io.craftgate.request", "io.craftgate.response")
-                .map(packageName -> new Reflections(packageName, new SubTypesScanner(false)))
-                .flatMap(reflections -> reflections.getSubTypesOf(Object.class).stream())
-                .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()) && !Modifier.isStatic(clazz.getModifiers()))
-                .map(Elixirify::parseClass)
-                .toList();
     }
 
     public static Module parseEnum(Class<? extends Enum> clazz) {
