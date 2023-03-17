@@ -4,22 +4,23 @@
 <#local spc>${""?left_pad(indent * 2)}</#local>
 ${spc}defmodule ${enum.name} do
   <#list enum.values as value>
-  ${spc}def ${Utils.toSnakeCase(value)}(), do: :${value}
+  ${spc}def ${Utils.toSnakeCase(value)}(), do: "${value}"
   </#list>
 
-  ${spc}@type t :: <#list enum.values as value>:${value}<#sep> | </#list>
+  ${spc}@type t :: <#list enum.values as value>"${value}"<#sep> | </#list>
 ${spc}end
 </#macro>
 
 <#macro show_class class indent=1>
 <#local spc>${""?left_pad(indent * 2)}</#local>
 ${spc}defmodule ${class.name} do
-  ${spc}use Jason.Structs.Struct
+  ${spc}use Craftgate.Serializable
 
-  ${spc}jason_struct do
-  <#list class.exposedFields as name, field>
-    ${spc}field :${Utils.toSnakeCase(name)}, ${field.typeSpec}
+  ${spc}fields do
+  <#list class.fields as field>
+  ${spc}${spc}field :${field.elixirName}, ${field.type.deserializationSpec}<#sep>
   </#list>
+
   ${spc}end
 ${spc}end
 </#macro>

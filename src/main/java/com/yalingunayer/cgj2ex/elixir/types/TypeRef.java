@@ -15,11 +15,21 @@ public class TypeRef implements Type {
         return getNamespace() + "." + typeName + ".t()";
     }
 
+    @Override
+    public String getDeserializationSpec() {
+        return "\"" + getNamespace() + "." + typeName +  "\"";
+    }
+
     public String getNamespace() {
         return Utils.packageNameToNamespace(this.packageName);
     }
 
     public AliasedTypeRef aliased() {
         return new AliasedTypeRef(this.packageName, this.typeName);
+    }
+
+    @Override
+    public boolean requiresNestedDeserialization() {
+        return true;
     }
 }

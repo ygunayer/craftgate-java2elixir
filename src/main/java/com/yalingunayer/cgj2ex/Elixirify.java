@@ -11,7 +11,6 @@ import org.reflections.scanners.SubTypesScanner;
 
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
@@ -27,7 +26,7 @@ import java.util.stream.Stream;
 
 public class Elixirify {
     public static List<Module> getAllModules() {
-        var models = Stream.of("io.craftgate.request", "io.craftgate.response")
+        var models = Stream.of("io.craftgate.request", "io.craftgate.response", "io.craftgate.model")
                 .map(packageName -> new Reflections(packageName, new SubTypesScanner(false)))
                 .flatMap(reflections -> reflections.getSubTypesOf(Object.class).stream())
                 .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()) && !Modifier.isStatic(clazz.getModifiers()))
@@ -82,14 +81,15 @@ public class Elixirify {
     public static Module parseClass(Class<?> clazz) {
         var fields = Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> !Modifier.isAbstract(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()))
-                .collect(Collectors.toMap(Field::getName, field -> parseType(field.getGenericType())));
+                .map(field -> new Field(field.getName(), parseType(field.getGenericType())))
+                .toList();
 
         var packageName = clazz.getPackage().getName();
         var name = clazz.getSimpleName();
         return ClassModule.builder()
                 .packageName(packageName)
                 .name(name)
-                .exposedFields(fields)
+                .fields(fields)
                 .build();
     }
 
@@ -152,7 +152,7 @@ public class Elixirify {
         }
 
         if (Objects.nonNull(clazz.getPackage()) && clazz.getPackage().getName().startsWith("io.craftgate")) {
-            return new TypeRef(clazz.getPackage().getName(), clazz.getSimpleName());
+            return new TypeRef(clazz.getPackage().getName(), clazz.getSimpleName()).aliased();
         }
 
         if (clazz.isAssignableFrom(List.class) || clazz.isAssignableFrom(Set.class)) {

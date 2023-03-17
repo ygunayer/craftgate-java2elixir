@@ -13,4 +13,9 @@ public class AliasedTypeRef extends TypeRef {
     public String getTypeSpec() {
         return this.getTypeName() + ".t()";
     }
+
+    @Override
+    public boolean requiresAlias() {
+        return true;
+    }
 }

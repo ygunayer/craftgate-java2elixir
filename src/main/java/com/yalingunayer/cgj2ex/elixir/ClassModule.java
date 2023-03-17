@@ -1,12 +1,11 @@
 package com.yalingunayer.cgj2ex.elixir;
 
-import com.yalingunayer.cgj2ex.elixir.types.Type;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-import java.util.Map;
+import java.util.List;
 
 @Getter
 @Builder
@@ -17,5 +16,9 @@ public class ClassModule implements Module {
 
     private final String packageName;
     private final String name;
-    private final Map<String, Type> exposedFields;
+    private final List<Field> fields;
+
+    public boolean requiresNestedDeserialization() {
+        return fields.stream().anyMatch(field -> field.getType().requiresNestedDeserialization());
+    }
 }

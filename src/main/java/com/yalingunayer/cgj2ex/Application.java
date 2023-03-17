@@ -7,6 +7,7 @@ import picocli.CommandLine;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -16,9 +17,10 @@ public class Application {
         Path rootPath;
 
         @CommandLine.Option(names = "--ignore", description = "Packages to ignore when generating modules")
-        List<String> ignoredPackages = List.of(
+        Set<String> ignoredPackages = Set.of(
                 "io.craftgate.net",
-                "io.craftgate.request.common"
+                "io.craftgate.request.common",
+                "io.craftgate.response.common"
         );
 
         @Override

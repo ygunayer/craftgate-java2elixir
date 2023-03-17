@@ -18,4 +18,14 @@ public class ListType implements Type {
     public String getTypeSpec() {
         return "[" + this.inner.stream().map(Type::getTypeSpec).collect(Collectors.joining(", ")) + "]";
     }
+
+    @Override
+    public String getDeserializationSpec() {
+        return "[" + this.inner.stream().map(Type::getDeserializationSpec).collect(Collectors.joining(", ")) + "]";
+    }
+
+    @Override
+    public boolean requiresNestedDeserialization() {
+        return true;
+    }
 }
