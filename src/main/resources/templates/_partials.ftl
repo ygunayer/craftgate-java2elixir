@@ -1,28 +1,27 @@
 <#assign Utils=statics['com.yalingunayer.cgj2ex.Utils']>
 
-<#macro show_enum enum indent=1>
+<#macro show_enum enum indent=1 useFullName=false>
 <#local spc>${""?left_pad(indent * 2)}</#local>
-${spc}defmodule ${enum.name} do
-  <#list enum.values as value>
-  ${spc}def ${Utils.toSnakeCase(value)}(), do: "${value}"
+${spc}defmodule <#if useFullName>${enum.namespace}.</#if>${enum.name} do
+  ${spc}use Craftgate.Enum, [
+    <#list enum.values as value>
+    ${spc}:${value}<#sep>,
   </#list>
 
-  ${spc}@type t :: <#list enum.values as value>"${value}"<#sep> | </#list>
+  ${spc}]
 ${spc}end
 </#macro>
 
-<#macro show_class class indent=1>
+<#macro show_class class indent=1 useFullName=false>
 <#local spc>${""?left_pad(indent * 2)}</#local>
-${spc}defmodule ${class.name} do
-  ${spc}use Craftgate.Serializable
-
-  ${spc}fields do
+defmodule <#if useFullName>${class.namespace}.</#if>${class.name} do
+  use Craftgate.Serializable, [
   <#list class.fields as field>
-  ${spc}${spc}field :${field.elixirName}, ${field.type.deserializationSpec}<#sep>
+  ${spc}${field.elixirName}: ${field.type.deserializationSpec}<#sep>,
   </#list>
 
-  ${spc}end
-${spc}end
+  ]
+end
 </#macro>
 
 <#macro show_namespace namespace>

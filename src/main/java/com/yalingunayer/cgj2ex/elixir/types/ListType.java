@@ -21,11 +21,16 @@ public class ListType implements Type {
 
     @Override
     public String getDeserializationSpec() {
-        return "[" + this.inner.stream().map(Type::getDeserializationSpec).collect(Collectors.joining(", ")) + "]";
+        return "{:array, " + this.inner.stream().map(Type::getDeserializationSpec).collect(Collectors.joining(", ")) + "}";
     }
 
     @Override
     public boolean requiresNestedDeserialization() {
         return true;
+    }
+
+    @Override
+    public String getDefaultValue() {
+        return "[]";
     }
 }

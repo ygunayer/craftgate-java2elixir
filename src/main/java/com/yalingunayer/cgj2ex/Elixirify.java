@@ -11,6 +11,7 @@ import org.reflections.scanners.SubTypesScanner;
 
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
@@ -46,21 +47,21 @@ public class Elixirify {
                 .toList()
                 .toArray(new String[0]);
 
-        var lastIdx = filePathParts.length - 1;
-        filePathParts[lastIdx] = filePathParts[lastIdx] + ".ex";
+        var namespacePath = Paths.get(rootDir.toAbsolutePath().toString(), filePathParts).toAbsolutePath();
 
-        var targetPath = Paths.get(rootDir.toAbsolutePath().toString(), filePathParts).toAbsolutePath();
-        var file = targetPath.toFile();
+        namespacePath.toFile().mkdirs();
 
-        file.getParentFile().mkdirs();
+        for (var module : namespace.getModules()) {
+            var filePath = namespacePath.resolve(Utils.toSnakeCase(module.getName()) + ".ex");
+            var file = filePath.toFile();
 
-        var renderedNamespace = renderer.render(namespace);
-        try (var fos = new FileOutputStream(file);
-            var writer = new OutputStreamWriter(fos)) {
-            writer.write(renderedNamespace);
+            var renderedModule = renderer.render(module);
+            try (var fos = new FileOutputStream(file);
+                 var writer = new OutputStreamWriter(fos)) {
+                writer.write(renderedModule);
+                System.out.printf("Module %s was written to %s%n", module.getName(), filePath);
+            }
         }
-
-        System.out.printf("Namespace %s was written to %s%n", namespace.getName(), targetPath);
     }
 
     public static Module parseEnum(Class<? extends Enum> clazz) {
@@ -79,11 +80,7 @@ public class Elixirify {
     }
 
     public static Module parseClass(Class<?> clazz) {
-        var fields = Arrays.stream(clazz.getDeclaredFields())
-                .filter(field -> !Modifier.isAbstract(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()))
-                .map(field -> new Field(field.getName(), parseType(field.getGenericType())))
-                .toList();
-
+        var fields = getAllDeclaredFields(clazz).toList();
         var packageName = clazz.getPackage().getName();
         var name = clazz.getSimpleName();
         return ClassModule.builder()
@@ -91,6 +88,53 @@ public class Elixirify {
                 .name(name)
                 .fields(fields)
                 .build();
+    }
+
+    private static Stream<Field> getAllDeclaredFields(Class clazz) {
+        if (Objects.isNull(clazz) || Object.class.equals(clazz)) {
+            return Stream.empty();
+        }
+
+        var myFields = Stream.of(clazz.getDeclaredFields())
+                .filter(field -> !Modifier.isAbstract(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()))
+                .map(field -> new Field(field.getName(), parseType(field.getGenericType())));
+
+        var genericSuperclass = clazz.getGenericSuperclass();
+
+        if (genericSuperclass instanceof ParameterizedType parameterizedType) {
+            return Stream.concat(myFields, getAllDeclaredFieldsFromParameterizedType(parameterizedType));
+        }
+
+        return Stream.concat(myFields, getAllDeclaredFields((Class) genericSuperclass));
+    }
+
+    private static Stream<Field> getAllDeclaredFieldsFromParameterizedType(ParameterizedType parameterizedType) {
+        var rawType = (Class) parameterizedType.getRawType();
+        var typeVariables = rawType.getTypeParameters();
+        var typeArguments = parameterizedType.getActualTypeArguments();
+        var typesByName = new HashMap<String, Class>();
+        for (var i = 0; i < typeArguments.length; i++) {
+            typesByName.put(typeVariables[i].getName(), (Class) typeArguments[i]);
+        }
+        return Stream.of(rawType.getDeclaredFields())
+                .filter(field -> !Modifier.isAbstract(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()))
+                .flatMap(field -> {
+                    var genericType = field.getGenericType();
+                    if (genericType instanceof ParameterizedType fieldType) {
+                        return Arrays.stream(fieldType.getActualTypeArguments())
+                                .map(type -> {
+                                    if (type instanceof TypeVariable typeVariable) {
+                                        var actualType = typesByName.get(typeVariable.getName());
+                                        if (Objects.isNull(actualType)) {
+                                            throw new RuntimeException(String.format("Unknown type for type variable %s on field %s", typeVariable.getName(), field.getName()));
+                                        }
+                                        return new Field(field.getName(), parseType(actualType));
+                                    }
+                                    return new Field(field.getName(), parseType(field.getGenericType()));
+                                });
+                    }
+                    return Stream.of(new Field(field.getName(), parseType(field.getGenericType())));
+                });
     }
 
     public static Type parseType(java.lang.reflect.Type type) {
@@ -119,38 +163,6 @@ public class Elixirify {
     }
 
     public static Type parseType(Class<?> clazz) {
-        if (String.class.equals(clazz)) {
-            return BasicType.STRING;
-        }
-
-        if (Integer.class.equals(clazz) || Long.class.equals(clazz) ||
-                int.class.equals(clazz) || long.class.equals(clazz)) {
-            return BasicType.INTEGER;
-        }
-
-        if (Double.class.equals(clazz) || Float.class.equals(clazz) || BigDecimal.class.equals(clazz) ||
-                double.class.equals(clazz) || float.class.equals(clazz)) {
-            return BasicType.FLOAT;
-        }
-
-        if (Boolean.class.equals(clazz) || boolean.class.equals(clazz)) {
-            return BasicType.BOOLEAN;
-        }
-
-        if (clazz.isAssignableFrom(Map.class)) {
-            return BasicType.MAP;
-        }
-
-        if (LocalDateTime.class.equals(clazz) || ZonedDateTime.class.equals(clazz)) {
-            // TODO
-            return BasicType.STRING;
-        }
-
-        if (LocalDate.class.equals(clazz) || Date.class.equals(clazz)) {
-            // TODO
-            return BasicType.STRING;
-        }
-
         if (Objects.nonNull(clazz.getPackage()) && clazz.getPackage().getName().startsWith("io.craftgate")) {
             return new TypeRef(clazz.getPackage().getName(), clazz.getSimpleName()).aliased();
         }
@@ -159,6 +171,6 @@ public class Elixirify {
             return new ListType();
         }
 
-        return BasicType.TERM;
+        return BasicType.from(clazz);
     }
 }

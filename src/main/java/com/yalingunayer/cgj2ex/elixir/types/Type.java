@@ -14,4 +14,8 @@ public interface Type {
     default boolean requiresNestedDeserialization() {
         return false;
     }
+
+    default String getDefaultValue() {
+        return "nil";
+    }
 }

@@ -12,12 +12,12 @@ public class TypeRef implements Type {
 
     @Override
     public String getTypeSpec() {
-        return getNamespace() + "." + typeName + ".t()";
+        return getNamespace() + "." + typeName;
     }
 
     @Override
     public String getDeserializationSpec() {
-        return "\"" + getNamespace() + "." + typeName +  "\"";
+        return getNamespace() + "." + typeName;
     }
 
     public String getNamespace() {
