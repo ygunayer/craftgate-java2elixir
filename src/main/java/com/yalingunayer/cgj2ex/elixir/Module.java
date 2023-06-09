@@ -13,6 +13,11 @@ public interface Module {
         return getPackageName() + "." + getName();
     }
 
+    default String getOriginalFileUrl() {
+        var filePath = getFullName().replaceAll("\\.", "/") + ".java";
+        return "https://github.com/craftgate/craftgate-java-client/blob/master/src/main/java/" + filePath;
+    }
+
     default String getNamespace() {
         return Utils.packageNameToNamespace(getPackageName());
     }

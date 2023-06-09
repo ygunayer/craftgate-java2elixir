@@ -3,6 +3,10 @@
 <#macro show_enum enum indent=1 useFullName=false>
 <#local spc>${""?left_pad(indent * 2)}</#local>
 ${spc}defmodule <#if useFullName>${enum.namespace}.</#if>${enum.name} do
+  @moduledoc """
+  Elixir equivalent of the Java enum [${enum.fullName}](${enum.originalFileUrl})
+  """
+
   ${spc}use Craftgate.Enum, [
     <#list enum.values as value>
     ${spc}:${value}<#sep>,
@@ -15,6 +19,10 @@ ${spc}end
 <#macro show_class class indent=1 useFullName=false>
 <#local spc>${""?left_pad(indent * 2)}</#local>
 defmodule <#if useFullName>${class.namespace}.</#if>${class.name} do
+  @moduledoc """
+  Elixir equivalent of the Java data class [${class.fullName}](${class.originalFileUrl})
+  """
+
   use Craftgate.Serializable, [
   <#list class.fields as field>
   ${spc}${field.elixirName}: ${field.type.deserializationSpec}<#sep>,
